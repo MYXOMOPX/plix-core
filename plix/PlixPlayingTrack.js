@@ -83,8 +83,14 @@ module.exports = class PlixPlayingTrack {
             if (!records.length) return;
             const effect_name = sample.effect;
             const effect = this.effects[effect_name];
+            let bfSetFn = bufferHandler.set_just;
+            if (sample.set === "sum") bfSetFn = bufferHandler.set_sum;
+            else if (sample.set === "dif") bfSetFn = bufferHandler.set_dif;
             records.forEach(rec => {
-                effect(bufferHandler,rec[0]+beatAdd,rec[1]+beatAdd,beat,initData,rec[2] || EMPTY_OBJECT)
+                const beatStart = rec[0]+beatAdd;
+                const beatEnd = rec[1]+beatAdd;
+                const stage = (beat-beatStart)/(beatEnd-beatStart);
+                effect(stage,initData,rec[2] || EMPTY_OBJECT,bfSetFn,beat,bufferHandler);
             })
         });
     }
