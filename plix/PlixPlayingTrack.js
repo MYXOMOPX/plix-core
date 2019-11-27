@@ -191,7 +191,7 @@ module.exports = class PlixPlayingTrack {
 };
 
 function setLoop(fn){
-    if (requestAnimationFrame != null) {
+    if (typeof requestAnimationFrame === "function") {
         let stopped = false;
         const loop = () => {
             if (stopped) return;
