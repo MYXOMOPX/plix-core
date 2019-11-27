@@ -7,7 +7,7 @@ module.exports = class PlixMirrorBufferHandler extends PlixBufferHandler {
         const clr = typeof color === "number" ? color : colorUtils.colorToNumber(color);
         const setColor = (i) => {
             const i2 =  this.length-i;
-            this.pixels[i] = this.pixels[i2] = clr;
+            this.buffer[i] = this.buffer[i2] = clr;
         };
         if (typeof part === "number") {
             setColor(part)

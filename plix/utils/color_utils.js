@@ -4,6 +4,7 @@ module.exports.colorToNumber = function colorToNumber([r, g, b]) {
     return (r << 16) | (g << 8)| b;
 };
 module.exports.numberToColor = function numberToColor(number) {
+    if (number == null) return [0,0,0];
     return [16,8,0].map(offset => (number>>offset)&255);
 };
 
@@ -23,18 +24,20 @@ module.exports.shade = function shade(color, colorTo, stage) {
     })
 };
 
-module.exports.sum = function shade(color1, color2) {
+module.exports.sum = function sum(color1, color2) {
     return color1.map((c,i) => {
         const res = c+color2[i];
         if (res > 255) return 255;
         if (res < 0) return 0;
+        return res;
     })
 };
 
-module.exports.dif = function shade(color1, color2) {
+module.exports.dif = function dif(color1, color2) {
     return color1.map((c,i) => {
         const res = c-color2[i];
         if (res > 255) return 255;
         if (res < 0) return 0;
+        return res;
     })
 };

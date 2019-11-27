@@ -6,78 +6,84 @@ module.exports = class PlixBufferHandler {
         this.length = length;
         this.reset();
         this._setLed = this._setLed.bind(this);
-        this.set_just = this.set_just.bind(this);
-        this.set_sum = this.set_sum.bind(this);
-        this.set_dif = this.set_dif.bind(this);
     }
 
     reset(){
-        this.pixels = new Uint32Array(this.length);
+        this.buffer = new Array(this.length).fill(null);
     }
 
     _setLed(i,color,method){
         if (method === "sum") {
-            const currentColor = colorUtils.numberToColor(this.pixels[i]);
+            const currentColor = colorUtils.numberToColor(this.parent.buffer[i]);
             const resColor = colorUtils.sum(currentColor,color);
-            this.pixels[i] = colorUtils.colorToNumber(resColor);
+            this.buffer[i] = colorUtils.colorToNumber(resColor);
         } else if (method === "dif") {
-            const currentColor = colorUtils.numberToColor(this.pixels[i]);
+            const currentColor = colorUtils.numberToColor(this.parent.buffer[i]);
             const resColor = colorUtils.dif(currentColor,color);
-            this.pixels[i] = colorUtils.colorToNumber(resColor);
+            this.buffer[i] = colorUtils.colorToNumber(resColor);
         } else {
-            this.pixels[i] = colorUtils.colorToNumber(color);
+            this.buffer[i] = colorUtils.colorToNumber(color);
         }
     }
 
-    set(part, color, method="just") {
-        const typeOfPart = typeof  part;
-        if (typeof part === "number") {
-            this._setLed(part,color,method)
-        } else if (typeOfPart === "object") {
-            if (part instanceof Array) {
-                part.forEach((p) => this._setLed(p,color,method));
-            } else if (part.from && part.to) {
-                range(part.from, part.to).forEach((p) => this._setLed(p,color,method));
-            } else {
-                throw new Error("Part not supported: "+part)
-            }
-        } else {
-            throw new Error("Part not supported: "+part)
-        }
-    }
-
-    set_just(part,color) {
-        return this.set(part,color,"just")
-    }
-    set_sum(part,color) {
-        return this.set(part,color,"sum")
-    }
-    set_dif(part,color) {
-        return this.set(part,color,"dif")
-    }
-
-    getIndexes(part) {
-        const typeOfPart = typeof  part;
+    set(leds, color, method="just") {
+        const typeOfPart = typeof  leds;
         if (typeOfPart === "number") {
-            return [part];
-        } else if (typeOfPart === "object") {
-            if (part instanceof Array) return part;
-            else if (part.from && part.to) return range(part.from, part.to);
-            else return undefined;
+            this._setLed(leds,color,method)
+        } else if (typeOfPart === "object" && leds instanceof Array) {
+            leds.forEach((p) => this._setLed(p,color,method))
+        } else {
+            throw new Error("Bad leds specified: "+leds)
         }
-        return undefined;
+    }
+
+    // getIndexes(part) {
+    //     const typeOfPart = typeof  part;
+    //     if (typeOfPart === "number") {
+    //         return [part];
+    //     } else if (typeOfPart === "object") {
+    //         if (part instanceof Array) return part;
+    //         else if (part.from && part.to) return range(part.from, part.to);
+    //         else return undefined;
+    //     }
+    //     return undefined;
+    // }
+
+    combineWith(bufferHandler, method="just") {
+        const bufferB = bufferHandler.buffer;
+        let mapFunction;
+        if (method === "just") {
+            mapFunction = (val,i) => {
+                if (bufferB[i] !== null) return bufferB[i];
+                return val;
+            }
+        } else if (method === "sum") {
+            mapFunction = (val, i) => {
+                const valB = bufferB[i];
+                if (val === null && valB === null) return null;
+                const currentColor = colorUtils.numberToColor(val);
+                const colorB = colorUtils.numberToColor(valB);
+                const resColor = colorUtils.sum(currentColor,colorB);
+                return colorUtils.colorToNumber(resColor);
+            }
+        } else if (method === "dif") {
+            mapFunction = (val, i) => {
+                const valB = bufferB[i];
+                if (val === null && valB === null) return null;
+                const currentColor = colorUtils.numberToColor(val);
+                const colorB = colorUtils.numberToColor(valB);
+                const resColor = colorUtils.dif(currentColor,colorB);
+                return colorUtils.colorToNumber(resColor);
+            }
+        }
+        this.buffer = this.buffer.map(mapFunction)
+    }
+
+    getEmpty(){
+        return new PlixBufferHandler(this.length);
     }
 
     getPixels() {
-        return this.pixels;
+        return new Uint32Array(this.buffer);
     }
 };
-
-function range(start, end) {
-    const a = Math.min(start,end);
-    const reversed = (start > end);
-    const length = reversed ? start-end : end - start;
-    const arr = (new Array(length + 1)).fill(undefined).map((_, i) => i + a);
-    if (reversed) return arr.reverse();
-    return arr;
-}

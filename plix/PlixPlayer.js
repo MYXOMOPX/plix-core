@@ -2,10 +2,9 @@ const PlixPlayingTrack = require('./PlixPlayingTrack');
 
 module.exports = class PlixPlayer {
 
-    constructor(effects, ledCount, bufferHandler){
+    constructor(effects, ledCount){
         this.effects = effects;
         this.ledCount = ledCount;
-        this.bufferHandler = bufferHandler;
         this.onTick = this.onTick.bind(this);
     }
 
@@ -13,7 +12,7 @@ module.exports = class PlixPlayer {
         if (this.track) {
             this.stop();
         }
-        this.track = new PlixPlayingTrack(trackData, this.ledCount, this.bufferHandler, this.effects);
+        this.track = new PlixPlayingTrack(trackData, this.ledCount, this.effects);
         this.track.play();
         this.track.onTick = this.onTick;
     }
