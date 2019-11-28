@@ -5,76 +5,64 @@ module.exports = class PlixBufferHandler {
     constructor(length){
         this.length = length;
         this.reset();
-        this._setLed = this._setLed.bind(this);
     }
 
     reset(){
         this.buffer = new Array(this.length).fill(null);
     }
 
-    _setLed(i,color,method){
-        if (method === "sum") {
-            const currentColor = colorUtils.numberToColor(this.parent.buffer[i]);
-            const resColor = colorUtils.sum(currentColor,color);
-            this.buffer[i] = colorUtils.colorToNumber(resColor);
-        } else if (method === "dif") {
-            const currentColor = colorUtils.numberToColor(this.parent.buffer[i]);
-            const resColor = colorUtils.dif(currentColor,color);
-            this.buffer[i] = colorUtils.colorToNumber(resColor);
-        } else {
-            this.buffer[i] = colorUtils.colorToNumber(color);
-        }
-    }
-
-    set(leds, color, method="just") {
+    set(leds, color) {
+        const clr = colorUtils.colorToNumber(color);
         const typeOfPart = typeof  leds;
         if (typeOfPart === "number") {
-            this._setLed(leds,color,method)
+            this.buffer[leds] = clr;
         } else if (typeOfPart === "object" && leds instanceof Array) {
-            leds.forEach((p) => this._setLed(p,color,method))
+            leds.forEach((p) => this.buffer[p] = clr)
         } else {
             throw new Error("Bad leds specified: "+leds)
         }
     }
 
-    // getIndexes(part) {
-    //     const typeOfPart = typeof  part;
-    //     if (typeOfPart === "number") {
-    //         return [part];
-    //     } else if (typeOfPart === "object") {
-    //         if (part instanceof Array) return part;
-    //         else if (part.from && part.to) return range(part.from, part.to);
-    //         else return undefined;
-    //     }
-    //     return undefined;
-    // }
-
     combineWith(bufferHandler, method="just") {
         const bufferB = bufferHandler.buffer;
         let mapFunction;
-        if (method === "just") {
-            mapFunction = (val,i) => {
-                if (bufferB[i] !== null) return bufferB[i];
-                return val;
-            }
-        } else if (method === "sum") {
-            mapFunction = (val, i) => {
-                const valB = bufferB[i];
-                if (val === null && valB === null) return null;
-                const currentColor = colorUtils.numberToColor(val);
-                const colorB = colorUtils.numberToColor(valB);
-                const resColor = colorUtils.sum(currentColor,colorB);
-                return colorUtils.colorToNumber(resColor);
-            }
-        } else if (method === "dif") {
-            mapFunction = (val, i) => {
-                const valB = bufferB[i];
-                if (val === null && valB === null) return null;
-                const currentColor = colorUtils.numberToColor(val);
-                const colorB = colorUtils.numberToColor(valB);
-                const resColor = colorUtils.dif(currentColor,colorB);
-                return colorUtils.colorToNumber(resColor);
-            }
+        switch (method) {
+            case "sum":
+            case "dif":
+                mapFunction = (val, i) => {
+                    const valB = bufferB[i];
+                    if (val === null && valB === null) return null;
+                    const currentColor = colorUtils.numberToColor(val);
+                    const colorB = colorUtils.numberToColor(valB);
+                    const colorMethod = colorUtils[method];
+                    const resColor = colorMethod(currentColor,colorB);
+                    return colorUtils.colorToNumber(resColor);
+                };
+                break;
+            case "min":
+            case "max":
+            case "min_components":
+            case "max_components":
+                mapFunction = (val, i) => {
+                    const valB = bufferB[i];
+                    if (val === null || valB === null) {
+                        if (val === null) return valB;
+                        return val;
+                    }
+                    const currentColor = colorUtils.numberToColor(val);
+                    const colorB = colorUtils.numberToColor(valB);
+                    const colorMethod = colorUtils[method];
+                    const resColor = colorMethod(currentColor,colorB);
+                    return colorUtils.colorToNumber(resColor);
+                };
+                break;
+            case "just":
+            default:
+                mapFunction = (val,i) => {
+                    if (bufferB[i] !== null) return bufferB[i];
+                    return val;
+                };
+                break;
         }
         this.buffer = this.buffer.map(mapFunction)
     }

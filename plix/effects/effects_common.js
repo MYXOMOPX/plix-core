@@ -49,9 +49,10 @@ effects.mod_gain = function mod_gain(initParams, data, bufferHandler) {
     const gain = 1-value;
     const gainedColor = colorUtils.gain(WHITE, gain);
     for (let i = 0; i < localBH.length; i++) {
-        localBH.set(i,gainedColor)
+        const color = colorUtils.numberToColor(bufferHandler.buffer[i]);
+        localBH.set(i,colorUtils.gain(color,value));
     }
-    bufferHandler.combineWith(localBH,"dif");
+    bufferHandler.combineWith(localBH,"just");
 };
 
 module.exports = effects;
