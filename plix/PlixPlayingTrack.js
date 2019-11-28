@@ -31,8 +31,8 @@ module.exports = class PlixPlayingTrack {
         this.records = data.records;
         this.ledCount = ledCount;
         this.bufferHandler = new PlixBufferHandler(ledCount);
-
         this.bpm = trackMeta.bpm;
+        this.bpm_offset = trackMeta.bpm_offset || 0;
         this.bpms = trackMeta.bpm/60000;
         this.beatCount = trackMeta.bpm_count;
 
@@ -57,8 +57,12 @@ module.exports = class PlixPlayingTrack {
     }
 
     getBeat(){
-        const timeDif = Date.now()-this.startTime;
-        return timeDif*this.bpms;
+        const time = this.getTime()-this.bpm_offset;
+        return time*this.bpms;
+    }
+
+    getTime() {
+        return Date.now()-this.startTime;
     }
 
     updateTime(ms){
@@ -102,26 +106,29 @@ module.exports = class PlixPlayingTrack {
             let preModifiers=[], postModifiers=[];
             if (sample.modifiers) {
                 preModifiers = sample.modifiers
-                                    .filter(descr => descr.type === "pre")
-                                    .map(descr => {
-                                        const fn = this.effects[descr.effect];
-                                        return fn.bind(fn, descr.params || EMPTY_OBJECT)
-                                    });
+                                    .filter(descr => descr.type === "pre");
                 postModifiers = sample.modifiers
-                                    .filter(x => x.type === "post")
-                                    .map(descr => {
-                                        const fn = this.effects[descr.effect];
-                                        return fn.bind(fn, descr.params || EMPTY_OBJECT)
-                                    });
+                                    .filter(x => x.type === "post");
             }
             const sequence = [
                 ...preModifiers,
-                effectFn.bind(effectFn, this.samplesInitData[sampleName]),
+                effectFn,
                 ...postModifiers
             ];
-            this.sampleFunctions[sampleName] = (...args) => {
-                sequence.forEach(fn => {
-                    fn(...args)
+            this.sampleFunctions[sampleName] = (sampleBeat, sampleLength, ...args) => {
+                sequence.forEach(element => {
+                    if (typeof element === "function") {
+                        element(this.samplesInitData[sampleName], ...args);
+                        return;
+                    }
+                    const fn = this.effects[element.effect];
+                    const start = element.start || 0;
+                    const length = element.length || sampleLength-start;
+                    const end = start+length;
+                    if (sampleBeat >= start && sampleBeat <= end) {
+                        const modStage = (sampleBeat-start)/(length);
+                        fn(element.params, ...args, modStage)
+                    }
                 })
             }
         });
@@ -160,10 +167,13 @@ module.exports = class PlixPlayingTrack {
     _handleSample(sampleName, bufferHandler, beat) {
         const sample = this.samples[sampleName];
         const sampleFunction = this.sampleFunctions[sampleName];
-        const repeats = sample.beats.filter(b => beat >= b && beat <= b+sample.length);
+        const repeats = sample.beats
+                .map((b,i) => [b,i])
+                .filter(([b]) => beat >= b && beat <= b+sample.length);
         const localBufferHandler = new PlixBufferHandler(this.ledCount);
         const positions = sample.positions;
-        repeats.forEach((beatAdd,repeatIndex) => {
+        repeats.forEach(([beatAdd,repeatIndex]) => {
+            const beatOfSample = beat-beatAdd;
             const records = sample.record
                 .map((rec,i) => [rec,i])
                 .filter(data => {
@@ -178,7 +188,7 @@ module.exports = class PlixPlayingTrack {
                 const effectData = {
                     stage, recordIndex, repeatIndex, positions, beat, recordParams: rec[2] || EMPTY_OBJECT
                 };
-                sampleFunction(effectData,localBufferHandler)
+                sampleFunction(beatOfSample, sample.length, effectData, localBufferHandler)
             });
             const overlayMethod = sample.overlay_method || "just";
             bufferHandler.combineWith(localBufferHandler,overlayMethod)

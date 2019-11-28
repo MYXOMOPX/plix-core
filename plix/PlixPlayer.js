@@ -32,6 +32,10 @@ module.exports = class PlixPlayer {
         if (this.track) return this.track.getBeat();
         return -1;
     }
+    getTime(){
+        if (this.track) return this.track.getTime();
+        return -1;
+    }
 
     onTick(bufferHandler){
     }
