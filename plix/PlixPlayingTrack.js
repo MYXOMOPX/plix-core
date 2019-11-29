@@ -159,18 +159,18 @@ module.exports = class PlixPlayingTrack {
         }
         this.bufferHandler.reset();
         for (let sampleName of this.samplesList) {
-            this._handleSample(sampleName, this.bufferHandler, beat)
+            this._handleSampleTick(sampleName, this.bufferHandler, beat)
         }
         this.onTick(this.bufferHandler)
     }
 
-    _handleSample(sampleName, bufferHandler, beat) {
+    _handleSampleTick(sampleName, bufferHandler, beat) {
         const sample = this.samples[sampleName];
         const sampleFunction = this.sampleFunctions[sampleName];
         const repeats = sample.beats
                 .map((b,i) => [b,i])
                 .filter(([b]) => beat >= b && beat <= b+sample.length);
-        const localBufferHandler = new PlixBufferHandler(this.ledCount);
+        const localBufferHandler = new PlixBufferHandler(this.ledCount); // ToDo make localBH for each repeats or records
         const positions = sample.positions;
         repeats.forEach(([beatAdd,repeatIndex]) => {
             const beatOfSample = beat-beatAdd;

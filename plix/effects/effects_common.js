@@ -20,11 +20,44 @@ effects.light = function light(initParams, data, bufferHandler) {
     });
 };
 
+function getValueFromRepeatList(index, listData){
+    if (listData instanceof Array) return listData[index];
+    if (typeof listData !== "object") return false;
+    const type = listData.type;
+    if (type === "each") {
+        const keys = Object.keys(listData);
+        const foundKey = keys.filter(x => x !== "type").find(key => {
+           const NIndex = key.indexOf("n");
+           const nVal = Number(key.substring(0,NIndex));
+           const plusIndex = key.indexOf("+");
+           let additionalVal = 0;
+           if (plusIndex >= 0) additionalVal = Number(key.substring(plusIndex+1));
+           return index%nVal === additionalVal;
+        });
+        return listData[foundKey];
+    } else if (type === "after") {
+        let keys = Object.keys(listData);
+        keys.splice(keys.indexOf("type"),1);
+        const foundKey = keys.map(x => Number(x)).reverse().find(key => {
+            return key <= index;
+        });
+        return listData[foundKey]
+    }
+}
+
 
 effects.mod_filter_positions = function blink(initParams, data, bufferHandler) {
-    const recs = initParams.records[data.recordIndex];
-    if (recs === null) return;
-    data.positions = data.positions.filter((x,i) => recs.indexOf(i) >= 0);
+    let index, listData;
+    if (initParams.records) {
+        index = data.recordIndex;
+        listData = initParams.records;
+    } else {
+        index = data.repeatIndex;
+        listData = initParams.repeats;
+    }
+    const postitionIndexes = getValueFromRepeatList(index,listData);
+    if (!postitionIndexes) return;
+    data.positions = data.positions.filter((x,i) => postitionIndexes.indexOf(i) >= 0);
 };
 
 // effects.mod_strob = function glitch_mod(initParams, data, bufferHandler) {
@@ -57,9 +90,10 @@ effects.mod_strob = function glitch_mod(initParams, data, bufferHandler, modStag
 };
 effects.mod_gain = function mod_gain(initParams, data, bufferHandler) {
     const value = initParams.value;
-    const gain = 1-value;
     for (let i = 0; i < bufferHandler.length; i++) {
-        const color = colorUtils.numberToColor(bufferHandler.buffer[i]);
+        const clr = bufferHandler.buffer[i];
+        if (clr === null) continue;
+        const color = colorUtils.numberToColor(clr);
         bufferHandler.set(i,colorUtils.gain(color,value));
     }
 };
