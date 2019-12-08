@@ -46,6 +46,7 @@ module.exports = class PlixPlayer extends EventEmitter {
     }
 
     onStop(reason){
+        this.track = null;
         console.log(`Track stopped. Reason: ${reason}`)
     }
 };

@@ -58,6 +58,7 @@ module.exports = class PlixPlayingTrack extends EventEmitter{
 
     _stop(reason="MANUAL") {
         this.emit('stop',reason);
+        if (!this._stopLoop) return;
         this._stopLoop();
         this._stopLoop = null;
     }
