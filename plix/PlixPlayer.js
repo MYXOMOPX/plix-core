@@ -1,11 +1,14 @@
 const PlixPlayingTrack = require('./PlixPlayingTrack');
+const EventEmitter = require('events');
 
-module.exports = class PlixPlayer {
+module.exports = class PlixPlayer extends EventEmitter {
 
     constructor(effects, ledCount){
+        super();
         this.effects = effects;
         this.ledCount = ledCount;
         this.onTick = this.onTick.bind(this);
+        this.onStop = this.onStop.bind(this);
     }
 
     play(trackData){
@@ -14,7 +17,8 @@ module.exports = class PlixPlayer {
         }
         this.track = new PlixPlayingTrack(trackData, this.ledCount, this.effects);
         this.track.play();
-        this.track.onTick = this.onTick;
+        this.track.addListener("tick",this.onTick);
+        this.track.addListener("stop",this.onStop);
     }
 
     updateTime(ms){
@@ -38,5 +42,10 @@ module.exports = class PlixPlayer {
     }
 
     onTick(bufferHandler){
+        throw new Error("On tick not implemented");
+    }
+
+    onStop(reason){
+        console.log(`Track stopped. Reason: ${reason}`)
     }
 };

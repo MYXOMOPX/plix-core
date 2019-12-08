@@ -1,4 +1,5 @@
 const PlixBufferHandler = require("./buffer/PlixBufferHandler");
+const EventEmitter = require('events');
 
 const EMPTY_OBJECT = {};
 
@@ -18,9 +19,10 @@ const EMPTY_OBJECT = {};
  * @type {module.PlixPlayingTrack}
  */
 
-module.exports = class PlixPlayingTrack {
+module.exports = class PlixPlayingTrack extends EventEmitter{
 
     constructor(data, ledCount, effects){
+        super();
         this._data = data;
         this.effects = effects;
         this.samples = data.samples;
@@ -44,14 +46,18 @@ module.exports = class PlixPlayingTrack {
 
     play() {
         if (this._stopLoop != null) {
-            this.stop();
+            this._stop("RESTART");
         }
         this.startTime = Date.now();
         this._stopLoop = setLoop(this._tick);
     }
 
-    stop() {
-        console.log("stopping");
+    stop(){
+        this._stop();
+    }
+
+    _stop(reason="MANUAL") {
+        this.emit('stop',reason);
         this._stopLoop();
         this._stopLoop = null;
     }
@@ -155,13 +161,13 @@ module.exports = class PlixPlayingTrack {
     _tick() {
         const beat = this.getBeat();
         if (beat > this.trackMeta.beats_count) {
-            this.stop();
+            this._stop("END");
         }
         this.bufferHandler.reset();
         for (let sampleName of this.samplesList) {
             this._handleSampleTick(sampleName, this.bufferHandler, beat)
         }
-        this.onTick(this.bufferHandler)
+        this.emit('tick',this.bufferHandler);
     }
 
     _handleSampleTick(sampleName, bufferHandler, beat) {
@@ -194,10 +200,6 @@ module.exports = class PlixPlayingTrack {
             bufferHandler.combineWith(localBufferHandler,overlayMethod)
         });
     }
-
-    onTick(bufferHandler){}
-
-
 };
 
 function setLoop(fn){

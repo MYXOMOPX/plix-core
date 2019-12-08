@@ -116,13 +116,6 @@ effects.mod_filter_records = function mod_filter_records(initParams, data, buffe
 
 
 effects.mod_animate_position_size = function mod_animate_position_size(initParams, data, bufferHandler, stage){
-    /*
-                "values": {
-              "0.5": 12,
-              "1.0": -6
-            }
-    */
-
     const valueMap = initParams.values;
     const points = Object.keys(valueMap).map(x => Number(x));
     const values = Object.values(valueMap);
