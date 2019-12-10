@@ -122,7 +122,7 @@ module.exports = class PlixPlayingTrack extends EventEmitter{
                 effectFn,
                 ...postModifiers
             ];
-            this.sampleFunctions[sampleName] = (sampleBeat, sampleLength, ...args) => {
+            this.sampleFunctions[sampleName] = (sampleBeat, sampleLength, effectStage, ...args) => {
                 sequence.forEach(element => {
                     if (typeof element === "function") {
                         element(this.samplesInitData[sampleName], ...args);
@@ -133,7 +133,7 @@ module.exports = class PlixPlayingTrack extends EventEmitter{
                     const length = element.length || sampleLength-start;
                     const end = start+length;
                     if (sampleBeat >= start && sampleBeat <= end) {
-                        const modStage = (sampleBeat-start)/(length);
+                        const modStage = element.use_record_stage ? effectStage : (sampleBeat-start)/(length);
                         fn(element.params, ...args, modStage)
                     }
                 })
@@ -195,7 +195,7 @@ module.exports = class PlixPlayingTrack extends EventEmitter{
                 const effectData = {
                     stage, recordIndex, repeatIndex, positions, beat, recordParams: rec[2] || EMPTY_OBJECT
                 };
-                sampleFunction(beatOfSample, sample.length, effectData, localBufferHandler)
+                sampleFunction(beatOfSample, sample.length, stage, effectData, localBufferHandler)
             });
             const overlayMethod = sample.overlay_method || "just";
             bufferHandler.combineWith(localBufferHandler,overlayMethod)
