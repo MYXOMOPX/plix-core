@@ -11,7 +11,7 @@ module.exports = class PlixPlayer extends EventEmitter {
         this.onStop = this.onStop.bind(this);
     }
 
-    play(trackData){
+    async play(trackData){
         if (this._track) {
             this.stop();
         }
