@@ -8,24 +8,24 @@ module.exports = class PlixPlayer extends EventEmitter {
         this.effects = effects;
         this.ledCount = ledCount;
         this.onTick = this.onTick.bind(this);
-        this.onStop = this.onStop.bind(this);
+        this.onTrackStop = this.onTrackStop.bind(this);
     }
 
     async play(trackData){
         if (this._track) {
-            this.stop();
+            this.stop("RESTART");
         }
         this._track = new PlixPlayingTrack(trackData, this.ledCount, this.effects);
         this._track.play();
         this._track.addListener("tick",this.onTick);
-        this._track.addListener("stop",this.onStop);
+        this._track.addListener("stop",this.onTrackStop);
     }
 
     updateTime(ms){
         if (this._track) this._track.updateTime(ms);
     }
 
-    stop(){
+    stop(reason="MANUAL"){
         if (this._track) {
             this._track.stop();
             this._track = null;
@@ -45,7 +45,7 @@ module.exports = class PlixPlayer extends EventEmitter {
         throw new Error("On tick not implemented");
     }
 
-    onStop(reason){
+    onTrackStop(reason){
         this._track = null;
         console.log(`Track stopped. Reason: ${reason}`)
     }
