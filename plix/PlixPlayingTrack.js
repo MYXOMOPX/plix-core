@@ -201,6 +201,10 @@ module.exports = class PlixPlayingTrack extends EventEmitter{
             bufferHandler.combineWith(localBufferHandler,overlayMethod)
         });
     }
+
+    get data() {
+        return this._data;
+    }
 };
 
 function setLoop(fn){
