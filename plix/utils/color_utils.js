@@ -95,6 +95,7 @@ function rgbToHsl([r, g, b]) {
     }
     return [ h, s, l ];
 }
+module.exports.rgbToHsl = rgbToHsl;
 /**
  * Converts an HSL color value to RGB. Conversion formula
  * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
@@ -126,3 +127,5 @@ function hslToRgb([h, s, l]) {
     }
     return [ r * 255, g * 255, b * 255 ];
 }
+
+module.exports.hslToRgb = hslToRgb;

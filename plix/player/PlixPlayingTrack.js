@@ -1,5 +1,6 @@
-const PlixBufferHandler = require("./buffer/PlixBufferHandler");
+const PlixBufferHandler = require("../buffer/PlixBufferHandler");
 const EventEmitter = require('events');
+const {setLoop, range} = require("../utils/functions");
 
 const EMPTY_OBJECT = {};
 
@@ -36,7 +37,8 @@ module.exports = class PlixPlayingTrack extends EventEmitter{
         this.bpm = trackMeta.bpm;
         this.bpm_offset = trackMeta.bpm_offset || 0;
         this.bpms = trackMeta.bpm/60000;
-        this.beatCount = trackMeta.bpm_count;
+        this.beatsCount = trackMeta.beats_count;
+        this.isLoop = trackMeta.loop;
 
         this._handleSamplePositions();
         this._initSamplesData();
@@ -161,8 +163,13 @@ module.exports = class PlixPlayingTrack extends EventEmitter{
 
     _tick() {
         const beat = this.getBeat();
-        if (beat > this.trackMeta.beats_count) {
+        if (beat >= this.beatsCount) {
+            if (this.isLoop) {
+                this.startTime = Date.now();
+                return;
+            }
             this._stop("END");
+            return;
         }
         this.bufferHandler.reset();
         for (let sampleName of this.samplesList) {
@@ -206,28 +213,3 @@ module.exports = class PlixPlayingTrack extends EventEmitter{
         return this._data;
     }
 };
-
-function setLoop(fn){
-    if (typeof requestAnimationFrame === "function") {
-        let stopped = false;
-        const loop = () => {
-            if (stopped) return;
-            fn();
-            requestAnimationFrame(loop)
-        };
-        requestAnimationFrame(loop);
-        return () => stopped = true;
-    } else {
-        const interval = setInterval(fn, 1);
-        return () => clearInterval(interval);
-    }
-}
-
-function range(start, end) {
-    const a = Math.min(start,end);
-    const reversed = (start > end);
-    const length = reversed ? start-end : end - start;
-    const arr = (new Array(length + 1)).fill(undefined).map((_, i) => i + a);
-    if (reversed) return arr.reverse();
-    return arr;
-}
