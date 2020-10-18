@@ -80,10 +80,11 @@ effects.mod_filter_positions = function blink(initParams, data, bufferHandler) {
 effects.mod_strob = function glitch_mod(initParams, data, bufferHandler, modStage) {
     const stage = modStage;
     const blinkCount = initParams.count || 1;
+    const strobGain = initParams.gain || 1;
     const stagePart = 1/blinkCount;
     let blinkTime = 0;
     while ((blinkTime+1)*stagePart < stage) blinkTime++;
-    const gain = (1-(stage-blinkTime*stagePart)*blinkCount);
+    const gain = (1-(stage-blinkTime*stagePart)*blinkCount*strobGain);
     effects.mod_gain({
         value: gain,
     }, data, bufferHandler)
